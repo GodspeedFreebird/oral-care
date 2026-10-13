@@ -37,9 +37,6 @@ jobs:
           echo "Applying database/schema.sql..."
           mysql -h 127.0.0.1 -P 3306 -u root -prootpassword oauthc_dental_db < database/schema.sql
           
-          echo "Applying database/setup_v2.sql..."
-          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword oauthc_dental_db < database/setup_v2.sql
-          
           echo "Applying database/seed.sql..."
           mysql -h 127.0.0.1 -P 3306 -u root -prootpassword oauthc_dental_db < database/seed.sql
           
@@ -82,4 +79,4 @@ jobs:
         if: always()
         run: |
           echo "=== Docker Container Logs ==="
-          docker logs oralcare_container
+          docker logs oralcare_container 2>&1 || echo "Container was not started."

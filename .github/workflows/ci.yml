@@ -1,0 +1,85 @@
+name: CI Smoke Test & Docker Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: oauthc_dental_db
+          MYSQL_USER: dental_user
+          MYSQL_PASSWORD: testpassword
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install MySQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y default-mysql-client
+
+      - name: Initialize Database Schema & Seed Data
+        run: |
+          echo "Applying database/schema.sql..."
+          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword oauthc_dental_db < database/schema.sql
+          
+          echo "Applying database/setup_v2.sql..."
+          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword oauthc_dental_db < database/setup_v2.sql
+          
+          echo "Applying database/seed.sql..."
+          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword oauthc_dental_db < database/seed.sql
+          
+          echo "Verifying tables created in database..."
+          mysql -h 127.0.0.1 -P 3306 -u dental_user -ptestpassword -e "SHOW TABLES;" oauthc_dental_db
+
+      - name: Build Application Docker Image
+        run: |
+          docker build -t oralcare:ci .
+
+      - name: Run Application Container
+        run: |
+          docker run -d --name oralcare_container --network="host" \
+            -e DB_HOST=127.0.0.1 \
+            -e DB_PORT=3306 \
+            -e DB_NAME=oauthc_dental_db \
+            -e DB_USER=dental_user \
+            -e DB_PASS=testpassword \
+            -e PORT=8080 \
+            oralcare:ci
+
+      - name: Wait for Container to Become Healthy
+        run: |
+          echo "Waiting for Apache service to respond on port 8080..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ || echo "000")
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "302" ]; then
+              echo "App responded with HTTP $STATUS after $i seconds."
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Execute Automated Smoke Test Suite
+        run: |
+          chmod +x scripts/smoke_test.sh
+          ./scripts/smoke_test.sh http://127.0.0.1:8080
+
+      - name: Output Container Logs on Failure
+        if: always()
+        run: |
+          echo "=== Docker Container Logs ==="
+          docker logs oralcare_container

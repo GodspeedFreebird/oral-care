@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Block access to hidden files and directories (e.g. .git)
+RewriteRule (^\.|/\.) - [F]
+
+# Route all requests to index.php if it's not an existing file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]

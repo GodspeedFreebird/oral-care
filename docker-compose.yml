@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oralcare_app
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8080}:80"
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DB_HOST=${DB_HOST:-127.0.0.1}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_NAME=${DB_NAME:-oauthc_dental_db}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASS=${DB_PASS:-}
+      - DB_SSL_CA=${DB_SSL_CA:-}
+      - DB_SSL_CA_CONTENT=${DB_SSL_CA_CONTENT:-}
+      - DB_SSL_VERIFY_SERVER_CERT=${DB_SSL_VERIFY_SERVER_CERT:-}
+      - SMTP_HOST=${SMTP_HOST:-smtp.example.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-placeholder@example.com}
+      - SMTP_PASS=${SMTP_PASS:-placeholder_password}
+    volumes:
+      - uploads_data:/var/www/html/public/uploads
+
+volumes:
+  uploads_data:

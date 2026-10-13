@@ -6,25 +6,34 @@ class Database {
 
     // Private constructor to prevent multiple instances
     private function __construct() {
-        // Database credentials
-        $host = '127.0.0.1';
-        $dbname = 'oauthc_dental_db';
-        $username = 'root'; // Replace with DB username
-        $password = '';     // Replace with DB password
-        $charset = 'utf8mb4';
+        // Database credentials - supports environment variables for cloud/docker deployment with local defaults
+        $host = getenv('DB_HOST') ?: '127.0.0.1';
+        $port = getenv('DB_PORT') ?: '3306';
+        $dbname = getenv('DB_NAME') ?: 'oauthc_dental_db';
+        $username = getenv('DB_USER') ?: 'root';
+        $password = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
+        $charset = getenv('DB_CHARSET') ?: 'utf8mb4';
 
-        $dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";
+        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=$charset";
         
         $options = [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Throw exceptions on errors
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // Fetch as associative arrays
+            PDO::ATTR_EMULATE_PREPARES   => false,                  // Use native prepared statements for security
         ];
+
+        // SSL support for managed cloud databases (e.g. Aiven, TiDB)
+        $sslCa = getenv('DB_SSL_CA');
+        if ($sslCa && file_exists($sslCa)) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+        } elseif (getenv('DB_SSL_VERIFY_SERVER_CERT') === '0' || getenv('DB_SSL_VERIFY_SERVER_CERT') === 'false') {
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+        }
 
         try {
             $this->connection = new PDO($dsn, $username, $password, $options);
         } catch (PDOException $e) {
-            error_log($e->getMessage());
+            error_log("Database connection error: " . $e->getMessage());
             die("Database connection failed. Please check the logs.");
         }
     }

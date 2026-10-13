@@ -1,0 +1,8 @@
+# Disable directory browsing
+Options -Indexes
+
+# Block direct access to specific sensitive directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(controllers|models|views|config|includes|services)(/.*)?$ - [F,L]
+</IfModule>

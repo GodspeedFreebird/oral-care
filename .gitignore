@@ -1,0 +1,16 @@
+# Database configuration
+/config/database.php
+
+# Third-party libraries
+/vendor/
+
+# Database backups
+/backups/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary outputs and scratch files
+/scratch/
+*.html

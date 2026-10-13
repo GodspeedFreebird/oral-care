@@ -5,7 +5,6 @@
 docker-compose.yml
 scratch/
 backups/
-vendor/
 *.log
 *.html
 *.md

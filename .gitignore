@@ -1,8 +1,9 @@
 # Database configuration
 /config/database.php
 
-# Third-party libraries
-/vendor/
+# Third-party libraries (allow bundled PHPMailer)
+/vendor/*
+!/vendor/PHPMailer/
 
 # Database backups
 /backups/

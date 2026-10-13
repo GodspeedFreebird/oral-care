@@ -3,10 +3,12 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Require PHPMailer manually since we didn't use Composer
-require_once BASE_PATH . '/vendor/PHPMailer/src/Exception.php';
-require_once BASE_PATH . '/vendor/PHPMailer/src/PHPMailer.php';
-require_once BASE_PATH . '/vendor/PHPMailer/src/SMTP.php';
+// Require PHPMailer manually if available
+if (file_exists(BASE_PATH . '/vendor/PHPMailer/src/Exception.php')) {
+    require_once BASE_PATH . '/vendor/PHPMailer/src/Exception.php';
+    require_once BASE_PATH . '/vendor/PHPMailer/src/PHPMailer.php';
+    require_once BASE_PATH . '/vendor/PHPMailer/src/SMTP.php';
+}
 require_once BASE_PATH . '/models/Notification.php';
 
 class NotificationService {
@@ -22,8 +24,12 @@ class NotificationService {
      * Initializes PHPMailer with config settings.
      */
     private function getMailer() {
-        $mail = new PHPMailer(true);
+        if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+            error_log("PHPMailer class is not loaded or available.");
+            return null;
+        }
         try {
+            $mail = new PHPMailer(true);
             // Server settings
             // $mail->SMTPDebug = SMTP::DEBUG_SERVER; // Enable for debugging
             $mail->isSMTP();
@@ -37,8 +43,8 @@ class NotificationService {
             // Recipients
             $mail->setFrom($this->config['from_email'], $this->config['from_name']);
             return $mail;
-        } catch (Exception $e) {
-            error_log("PHPMailer Config Error: {$mail->ErrorInfo}");
+        } catch (\Exception $e) {
+            error_log("PHPMailer Config Error: " . $e->getMessage());
             return null;
         }
     }
